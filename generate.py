@@ -9,6 +9,7 @@ load_dotenv(find_dotenv())
 
 def CreateChain(prompt,model='HuggingFaceH4/zephyr-7b-beta',length=512):
     #model
+    print('creating chain!!')
     hub_llm = HuggingFaceHub(repo_id=model,model_kwargs={"temperature": 0.5, "max_length": length})
     #chain
     try:
@@ -17,10 +18,12 @@ def CreateChain(prompt,model='HuggingFaceH4/zephyr-7b-beta',length=512):
         print("Chain Created Successfully!!")
 def CreateTopics(topic):
     errors = []
+    print('creating topics!!')
+    
     try:
         prompt = PromptTemplate(
             input_variables = ["question"],
-            template ="Write Deatiled Notes on the topic {question}, Seprate each section by a hyphen \n"
+            template ="Write 10 Titles for the topic {question}, Seprate each section by a hyphen \n"
         )
         Extract = CreateChain(prompt).run(topic)
         sections = Extract.split('-')
@@ -31,7 +34,7 @@ def CreateTopics(topic):
 
 def CreateData(sections):
     errors = []
-
+    print('creating data!!')
     presentation_data = {}
     for section in sections:
         try:
@@ -42,20 +45,23 @@ def CreateData(sections):
             )
             content = CreateChain(prompt,length=100).run(title)
             presentation_data[title] = content #saving
-            print('data created successfully!!')
+            print(f'data element created for {title}!!')
         except Exception as e:
             errors.append(e)
             continue
     if errors:
         print(errors)
+    print('creating data!!')
     return presentation_data
 
 def TransformData(presentation_data):
+    print('Performing Transformation!!')
     for title,content in presentation_data.items():
         temp_arr = []
         for item in presentation_data[title].split("\n\n"):
             temp_arr.append(item)
         presentation_data[title] = temp_arr
+    print('Transformation Complete!!')
     return presentation_data
 
 class PPT:
@@ -70,6 +76,7 @@ class PPT:
         title_slide_subtitle = title_slide.placeholders[1]
         title_slide_title.text = str(title)
         title_slide_subtitle.text = str(subtitle)
+        print('PPT object created!!')
         
         
     def setTheme(self, theme_number = 0):
@@ -128,6 +135,7 @@ class PPT:
     def savePresentation(self, filename):
         self.setTheme(0)
         self.presentation.save(filename)
+        print("Saved Successfully")
     
 def CreatePPT(topic,data):
     ppt = PPT(topic)
@@ -138,5 +146,7 @@ def CreatePPT(topic,data):
             else:
                 ppt.addContentSlide(None, content[index])                
     print("Compilation successful")
-    ppt.savePresentation(f'{topic}.pptx')
-    print("Saved Successfully")
+    try:
+        ppt.savePresentation(f'{topic}.pptx')
+    except Exception as e:
+        print(e)
