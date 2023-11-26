@@ -4,54 +4,52 @@ from pptx.dml.color import RGBColor
 from langchain.llms import HuggingFaceHub
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from dotenv import find_dotenv ,load_dotenv
-load_dotenv(find_dotenv())
 
-def CreateChain(prompt,model='HuggingFaceH4/zephyr-7b-beta',length=512):
+def CreateChain(prompt,model='tiiuae/falcon-7b-instruct',length=512):
+    print("Creating Chain!!")
     #model
-    print('creating chain!!')
-    hub_llm = HuggingFaceHub(repo_id=model,model_kwargs={"temperature": 0.5, "max_length": length})
+    hub_llm = HuggingFaceHub(repo_id=model)
     #chain
-    try:
-        return LLMChain(prompt=prompt,llm=hub_llm,verbose=True)
-    finally:
-        print("Chain Created Successfully!!")
+    print("Finished Creating Chain!!")
+    return LLMChain(prompt=prompt,llm=hub_llm,verbose=True)
+
 def CreateTopics(topic):
     errors = []
-    print('creating topics!!')
-    
+    print("Creating Topics!!")
     try:
         prompt = PromptTemplate(
             input_variables = ["question"],
-            template ="Write 10 Titles for the topic {question}, Seprate each section by a hyphen \n"
+            template ="Without indices give only title of important subtopics of the topic {question}\n"
         )
         Extract = CreateChain(prompt).run(topic)
-        sections = Extract.split('-')
-        print('topics created successfully!!')
-        return [section.strip() for section in sections if section.strip()]
+        Extract = Extract.split('\n')
+        return Extract
+    
     except Exception as e:
         errors.append(e)
+        print("Finished Creating Topics!!")
+        print(errors)
 
 def CreateData(sections):
     errors = []
-    print('creating data!!')
+    print("Creating Data!!")
     presentation_data = {}
+    prompt = PromptTemplate(
+                input_variables = ["question"],
+                template ="Explain in a single paragraph {question} \n"
+            )
+    Chain = CreateChain(prompt,length=100)
     for section in sections:
         try:
             title = section
-            prompt = PromptTemplate(
-                input_variables = ["question"],
-                template ="Explain in short {title} \n"
-            )
-            content = CreateChain(prompt,length=100).run(title)
+            content = Chain.run(title)
             presentation_data[title] = content #saving
-            print(f'data element created for {title}!!')
         except Exception as e:
             errors.append(e)
             continue
     if errors:
         print(errors)
-    print('creating data!!')
+    print("Finished Creating Data!!")
     return presentation_data
 
 def TransformData(presentation_data):
@@ -65,7 +63,7 @@ def TransformData(presentation_data):
     return presentation_data
 
 class PPT:
-    def __init__(self, title, subtitle=None):
+    def __init__(self, title, subtitle="  "):
         self.presentation = Presentation()
         self.title_slide_layout = self.presentation.slide_layouts[0]  
         self.content_slide_layout = self.presentation.slide_layouts[1]  
@@ -144,7 +142,7 @@ def CreatePPT(topic,data):
             if index == 0:
                 ppt.addContentSlide(title, content[index])
             else:
-                ppt.addContentSlide(None, content[index])                
+                ppt.addContentSlide(" ", content[index])                
     print("Compilation successful")
     try:
         ppt.savePresentation(f'{topic}.pptx')

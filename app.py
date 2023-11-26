@@ -1,6 +1,8 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
+from dotenv import find_dotenv ,load_dotenv
+load_dotenv(find_dotenv())
 from generate import *
 import time
 
@@ -8,7 +10,7 @@ st.title("PPT Generator!")
 # Form -
 with st.form("my_form"):
     st.subheader('Enter Your Topic - ')
-    st.session_state.topic = st.text_input('topic')
+    st.session_state.topic = st.text_input('')
     submit = st.form_submit_button()
 # On Submit -
 if submit:
@@ -16,16 +18,16 @@ if submit:
     progress_bar = st.progress(0, text="Processing your request...")
     time.sleep(2)
     try:
-        topic,completion_status = st.session_state.topic,0
+        topic = st.session_state.topic,
         progress_bar.progress(20, text="Creating topics...")
         topics = CreateTopics(topic)
-        st.write(topics)
+        print(topics)
         progress_bar.progress(40, text="Generating data...")
         presentation_data = CreateData(topics[:10])
         progress_bar.progress(60, text="Transforming data...")
         presentation_data = TransformData(presentation_data)
     except:
-        st.write('Server busy at the moment please try again!')
+        progress_bar.progress(0, text="Server Busy Please Try again...")
         time.sleep(3)
         st.rerun()
     try:
@@ -33,7 +35,7 @@ if submit:
         CreatePPT(topic,presentation_data)
         completion_status = 4
     except:
-        st.write('Unable to construct PPT please try again!')
+        progress_bar.progress(0, text="Unable to construct Please Try again...")
         time.sleep(3)
         st.rerun()
    
