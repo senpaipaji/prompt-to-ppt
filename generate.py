@@ -11,8 +11,10 @@ def CreateChain(prompt,model='HuggingFaceH4/zephyr-7b-beta',length=512):
     #model
     hub_llm = HuggingFaceHub(repo_id=model,model_kwargs={"temperature": 0.5, "max_length": length})
     #chain
-    return LLMChain(prompt=prompt,llm=hub_llm,verbose=True)
-
+    try:
+        return LLMChain(prompt=prompt,llm=hub_llm,verbose=True)
+    finally:
+        print("Chain Created Successfully!!")
 def CreateTopics(topic):
     errors = []
     try:
@@ -22,8 +24,8 @@ def CreateTopics(topic):
         )
         Extract = CreateChain(prompt).run(topic)
         sections = Extract.split('-')
+        print('topics created successfully!!')
         return [section.strip() for section in sections if section.strip()]
-    
     except Exception as e:
         errors.append(e)
 
@@ -40,6 +42,7 @@ def CreateData(sections):
             )
             content = CreateChain(prompt,length=100).run(title)
             presentation_data[title] = content #saving
+            print('data created successfully!!')
         except Exception as e:
             errors.append(e)
             continue
@@ -125,3 +128,15 @@ class PPT:
     def savePresentation(self, filename):
         self.setTheme(0)
         self.presentation.save(filename)
+    
+def CreatePPT(topic,data):
+    ppt = PPT(topic)
+    for title, content in data.items():
+        for index,item in enumerate(content):
+            if index == 0:
+                ppt.addContentSlide(title, content[index])
+            else:
+                ppt.addContentSlide(None, content[index])                
+    print("Compilation successful")
+    ppt.savePresentation(f'{topic}.pptx')
+    print("Saved Successfully")
